@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pa">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Bathroom Erinnerung</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Gurmukhi:wght@400;700&family=Baloo+2:wght@400;600;800&display=swap');
+  :root { --gold:#f5c842; --orange:#f4813a; --deep:#1a0a2e; --mid:#2d1457; --light:#ffe8b0; --green:#4caf82; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { min-height:100vh; background:var(--deep); display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:'Baloo 2',sans-serif; overflow:hidden; position:relative; }
+  body::before,body::after { content:''; position:fixed; border-radius:50%; filter:blur(80px); opacity:0.22; pointer-events:none; }
+  body::before { width:500px;height:500px; background:radial-gradient(circle,var(--orange),transparent); top:-150px;right:-150px; }
+  body::after  { width:400px;height:400px; background:radial-gradient(circle,var(--gold),transparent); bottom:-120px;left:-120px; }
+  .card { background:linear-gradient(145deg,var(--mid),#1e0c38); border:2px solid rgba(245,200,66,0.3); border-radius:32px; padding:44px 32px 36px; max-width:400px; width:92vw; text-align:center; box-shadow:0 30px 80px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.05) inset; position:relative; z-index:1; }
+  .emoji-wrap { font-size:68px; margin-bottom:10px; display:block; animation:float 3s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+  h1 { font-size:1.5rem; color:var(--gold); line-height:1.3; margin-bottom:6px; }
+  .subtitle { font-size:0.9rem; color:rgba(255,232,176,0.55); margin-bottom:28px; }
+  .ring-wrap { position:relative; width:170px; height:170px; margin:0 auto 22px; }
+  svg.ring { transform:rotate(-90deg); width:170px; height:170px; }
+  .ring-bg { fill:none; stroke:rgba(255,255,255,0.08); stroke-width:10; }
+  .ring-fg { fill:none; stroke:url(#ringGrad); stroke-width:10; stroke-linecap:round; stroke-dasharray:471; stroke-dashoffset:0; transition:stroke-dashoffset 1s linear; }
+  .ring-center { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; }
+  .time-display { font-size:2.2rem; font-weight:800; color:var(--light); letter-spacing:-1px; line-height:1; }
+  .time-label { font-size:0.7rem; color:rgba(255,232,176,0.45); margin-top:4px; text-transform:uppercase; letter-spacing:2px; }
+  .next-alarm { font-size:0.85rem; color:rgba(255,232,176,0.5); margin-bottom:22px; }
+  .next-alarm span { color:var(--gold); font-weight:600; }
+  .interval-row { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:22px; }
+  .interval-row label { color:rgba(255,232,176,0.5); font-size:0.82rem; }
+  .interval-row select { background:#ffffff; color:#1a0a2e; border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:6px 12px; font-family:'Baloo 2',sans-serif; font-size:0.88rem; cursor:pointer; font-weight:600; }
+  .btn-row { display:flex; gap:12px; justify-content:center; margin-bottom:22px; }
+  .btn { border:none; border-radius:50px; padding:13px 26px; font-family:'Baloo 2',sans-serif; font-size:0.95rem; font-weight:600; cursor:pointer; transition:transform 0.15s; }
+  .btn:active { transform:scale(0.95); }
+  .btn-primary { background:linear-gradient(135deg,var(--orange),var(--gold)); color:var(--deep); box-shadow:0 6px 24px rgba(244,129,58,0.4); }
+  .btn-test { background:linear-gradient(135deg,#4caf82,#26a96a); color:#fff; box-shadow:0 6px 20px rgba(76,175,130,0.35); }
+  .status { display:inline-flex; align-items:center; gap:7px; padding:7px 16px; border-radius:50px; font-size:0.82rem; font-weight:600; }
+  .status.on  { background:rgba(76,175,130,0.15); border:1px solid rgba(76,175,130,0.35); color:var(--green); }
+  .status.off { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:rgba(255,232,176,0.4); }
+  .dot { width:8px; height:8px; border-radius:50%; background:currentColor; }
+  .dot.pulse { animation:pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.35;transform:scale(0.6)} }
+  #alertOverlay { display:none; position:fixed; inset:0; z-index:200; align-items:center; justify-content:center; flex-direction:column; background:rgba(10,0,25,0.8); backdrop-filter:blur(6px); }
+  #alertOverlay.show { display:flex; }
+  .alert-card { background:linear-gradient(145deg,#3a0d6e,#1e0c38); border:3px solid var(--orange); border-radius:32px; padding:44px 28px 36px; text-align:center; max-width:360px; width:88vw; box-shadow:0 0 80px rgba(244,129,58,0.45); animation:bounceIn 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes bounceIn { from{transform:scale(0.65);opacity:0} to{transform:scale(1);opacity:1} }
+  .alert-emoji { font-size:90px; margin-bottom:16px; animation:wiggle 0.6s ease-in-out 4; }
+  @keyframes wiggle { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-14deg)} 75%{transform:rotate(14deg)} }
+  .alert-text { font-size:2rem; color:var(--gold); line-height:1.5; margin-bottom:8px; font-weight:800; }
+  .auto-bar-wrap { background:rgba(255,255,255,0.1); border-radius:10px; height:10px; overflow:hidden; margin-top:20px; }
+  .auto-bar { height:100%; border-radius:10px; background:linear-gradient(90deg,var(--orange),var(--gold)); width:100%; }
+  .auto-hint { font-size:0.75rem; color:rgba(255,232,176,0.35); margin-top:10px; }
+  .voice-info { font-size:0.78rem; color:rgba(255,232,176,0.35); margin-top:14px; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <span class="emoji-wrap">🚽</span>
+  <h1>Bathroom Erinnerung</h1>
+  <p class="subtitle">Sagt: „Dadiii, bathroom jaa"</p>
+
+  <div class="ring-wrap">
+    <svg class="ring" viewBox="0 0 170 170">
+      <defs>
+        <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#f4813a"/>
+          <stop offset="100%" stop-color="#f5c842"/>
+        </linearGradient>
+      </defs>
+      <circle class="ring-bg" cx="85" cy="85" r="75"/>
+      <circle class="ring-fg" id="ringFg" cx="85" cy="85" r="75"/>
+    </svg>
+    <div class="ring-center">
+      <div class="time-display" id="countdown">–</div>
+      <div class="time-label">verbleibend</div>
+    </div>
+  </div>
+
+  <div class="next-alarm" id="nextAlarmInfo">Noch nicht gestartet</div>
+
+  <div class="interval-row">
+    <label>Intervall:</label>
+    <select id="intervalSelect" onchange="changeInterval()">
+      <option value="5400" selected>1,5 Stunden</option>
+      <option value="3600">1 Stunde</option>
+      <option value="7200">2 Stunden</option>
+      <option value="10800">3 Stunden</option>
+      <option value="14400">4 Stunden</option>
+      <option value="300">5 Min (Test)</option>
+      <option value="10">10 Sek (Test)</option>
+    </select>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" id="toggleBtn" onclick="toggleTimer()">▶ Starten</button>
+    <button class="btn btn-test" onclick="testSpeak()">🔊 Test-Ton</button>
+  </div>
+
+  <div class="status off" id="statusBadge">
+    <div class="dot" id="statusDot"></div>
+    <span id="statusText">Inaktiv</span>
+  </div>
+
+  <div class="voice-info" id="voiceInfo">Stimme wird geladen…</div>
+</div>
+
+<div id="alertOverlay">
+  <div class="alert-card">
+    <div class="alert-emoji">🚽</div>
+    <div class="alert-text">Bebe,<br>bathroom jaaaa! 🙏</div>
+    <div class="auto-bar-wrap"><div class="auto-bar" id="autoBar"></div></div>
+    <div class="auto-hint">Schließt automatisch • Antippen zum Schließen</div>
+  </div>
+</div>
+
+<script>
+  const CIRC = 2 * Math.PI * 75;
+  const ringFg = document.getElementById('ringFg');
+  ringFg.style.strokeDasharray = CIRC;
+
+  // Die Sätze – "Dadiii, bathroom jaa" mehrfach wiederholt mit Pausen
+  // Wir nutzen Hindi-Stimme (klingt am natürlichsten für gemischte Punjabi/Englisch Sätze)
+  // und sprechen den Text mehrmals hintereinander
+  const PHRASE = "Bebe, bathroom jaaaa.";
+  const REPEATS = 6;      // wie oft wiederholt
+  const PAUSE_MS = 1800;  // Pause zwischen Wiederholungen
+
+  let speakTimeout = [];
+
+  function cancelAllSpeech() {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    speakTimeout.forEach(t => clearTimeout(t));
+    speakTimeout = [];
+  }
+
+  function speakOnce(text, lang, voice) {
+    return new Promise(resolve => {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = lang;
+      u.rate = 0.72;   // langsam & deutlich
+      u.pitch = 1.1;
+      u.volume = 1;
+      if (voice) u.voice = voice;
+      u.onend = resolve;
+      u.onerror = resolve;
+      window.speechSynthesis.speak(u);
+    });
+  }
+
+  function getBestVoice() {
+    const vv = window.speechSynthesis.getVoices();
+    // prefer Hindi (natürlichster Klang für "Dadiii, bathroom jaa")
+    return vv.find(v => v.lang === 'hi-IN')
+        || vv.find(v => v.lang.startsWith('hi'))
+        || vv.find(v => v.lang === 'pa-IN')
+        || vv.find(v => v.lang.startsWith('pa'))
+        || vv.find(v => v.lang.startsWith('en-IN'))  // Indian English als Fallback
+        || null;
+  }
+
+  async function speakRepeatedly() {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const voice = getBestVoice();
+    for (let i = 0; i < REPEATS; i++) {
+      // Check if we were cancelled between rounds
+      if (!window._speaking) break;
+      await speakOnce(PHRASE, 'hi-IN', voice);
+      if (i < REPEATS - 1) {
+        await new Promise(r => {
+          const t = setTimeout(r, PAUSE_MS);
+          speakTimeout.push(t);
+        });
+      }
+    }
+    window._speaking = false;
+  }
+
+  function startSpeaking() {
+    window._speaking = true;
+    speakRepeatedly();
+  }
+
+  function testSpeak() {
+    cancelAllSpeech();
+    window._speaking = true;
+    speakRepeatedly();
+  }
+
+  // Update voice info label
+  function updateVoiceInfo() {
+    const v = getBestVoice();
+    const el = document.getElementById('voiceInfo');
+    if (v) el.textContent = `Stimme: ${v.name} (${v.lang})`;
+    else el.textContent = 'Stimme: Standard-Stimme';
+  }
+
+  // Alert
+  let totalSeconds = 5400, remaining = 5400, running = false;
+  let tickId = null, barId = null;
+  const ALERT_SECS = 45;
+  let barRem = ALERT_SECS;
+
+  function showAlert() {
+    document.getElementById('alertOverlay').classList.add('show');
+    startSpeaking();
+    barRem = ALERT_SECS;
+    const bar = document.getElementById('autoBar');
+    bar.style.transition = 'none'; bar.style.width = '100%';
+    clearInterval(barId);
+    barId = setInterval(() => {
+      barRem--;
+      bar.style.transition = 'width 0.9s linear';
+      bar.style.width = (barRem / ALERT_SECS * 100) + '%';
+      if (barRem <= 0) { clearInterval(barId); closeAlert(); }
+    }, 1000);
+  }
+
+  function closeAlert() {
+    document.getElementById('alertOverlay').classList.remove('show');
+    clearInterval(barId);
+    cancelAllSpeech();
+  }
+
+  document.getElementById('alertOverlay').addEventListener('click', closeAlert);
+
+  function fmt(s) {
+    const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+    return h > 0 ? `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`
+                 : `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  }
+
+  function updateRing(rem, tot) { ringFg.style.strokeDashoffset = CIRC * (1 - rem/tot); }
+
+  function updateNextAlarm() {
+    if (!running) { document.getElementById('nextAlarmInfo').textContent = 'Noch nicht gestartet'; return; }
+    const t = new Date(Date.now() + remaining*1000);
+    document.getElementById('nextAlarmInfo').innerHTML =
+      `Nächster Alarm: <span>${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')} Uhr</span>`;
+  }
+
+  function tick() {
+    remaining--;
+    document.getElementById('countdown').textContent = fmt(remaining);
+    updateRing(remaining, totalSeconds);
+    if (remaining <= 0) { showAlert(); remaining = totalSeconds; updateNextAlarm(); }
+  }
+
+  function toggleTimer() { running ? stopTimer() : startTimer(); }
+
+  function startTimer() {
+    // iOS: audio unlock on user gesture
+    if (window.speechSynthesis) {
+      const u = new SpeechSynthesisUtterance(' ');
+      u.volume = 0; speechSynthesis.speak(u);
+      setTimeout(() => speechSynthesis.cancel(), 100);
+    }
+    running = true; remaining = totalSeconds;
+    document.getElementById('toggleBtn').textContent = '⏹ Stoppen';
+    document.getElementById('statusBadge').className = 'status on';
+    document.getElementById('statusDot').classList.add('pulse');
+    document.getElementById('statusText').textContent = 'Läuft ✓';
+    document.getElementById('countdown').textContent = fmt(remaining);
+    updateRing(remaining, totalSeconds); updateNextAlarm();
+    tickId = setInterval(tick, 1000);
+  }
+
+  function stopTimer() {
+    running = false; clearInterval(tickId); remaining = totalSeconds;
+    document.getElementById('toggleBtn').textContent = '▶ Starten';
+    document.getElementById('statusBadge').className = 'status off';
+    document.getElementById('statusDot').classList.remove('pulse');
+    document.getElementById('statusText').textContent = 'Inaktiv';
+    document.getElementById('countdown').textContent = '–';
+    updateRing(totalSeconds, totalSeconds); updateNextAlarm();
+  }
+
+  function changeInterval() {
+    totalSeconds = parseInt(document.getElementById('intervalSelect').value);
+    if (running) { stopTimer(); startTimer(); }
+    else { document.getElementById('countdown').textContent = '–'; updateRing(totalSeconds, totalSeconds); }
+  }
+
+  if (window.speechSynthesis) {
+    speechSynthesis.getVoices();
+    speechSynthesis.onvoiceschanged = () => { speechSynthesis.getVoices(); updateVoiceInfo(); };
+    setTimeout(updateVoiceInfo, 500);
+  }
+  updateRing(totalSeconds, totalSeconds);
+</script>
+</body>
+</html>
